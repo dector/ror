@@ -1,9 +1,20 @@
 task run {
-  cmd "go run ./cmd/ror"
   description "Runs the application"
+
+  cmd "go run ./cmd/ror"
 }
 
 task build {
-  cmd "go build"
   description "Compiles the application"
+
+  cmd "go build"
+}
+
+task install {
+  description "Installs the in ~/.local/bin"
+  depends {
+    on "build"
+  }
+
+  cmd "cp ./out/ror ~/.local/bin/ror"
 }

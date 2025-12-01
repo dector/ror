@@ -13,6 +13,7 @@ type Task struct {
 	Name        string
 	Command     string
 	Description string
+	DependsOn   []string
 }
 
 type RunnerConfig struct {
@@ -32,7 +33,13 @@ func main() {
 	fmt.Println("Available tasks:")
 	for name, task := range config.Tasks {
 		desc := task.Description
+		if desc == "" {
+			desc = "(no description)"
+		}
 		fmt.Printf("  %s: %s\n", name, desc)
+		if len(task.DependsOn) > 0 {
+			fmt.Printf("    Depends on: %v\n", task.DependsOn)
+		}
 	}
 }
 
@@ -59,7 +66,8 @@ func buildConfig() RunnerConfig {
 		taskName := node.Arguments[0].Value
 
 		task := Task{
-			Name: taskName,
+			Name:      taskName,
+			DependsOn: []string{},
 		}
 
 		if node.Children != nil {
@@ -72,6 +80,14 @@ func buildConfig() RunnerConfig {
 				case "description":
 					if len(child.Arguments) > 0 {
 						task.Description = child.Arguments[0].Value
+					}
+				case "depends":
+					if child.Children != nil {
+						for _, dep := range child.Children {
+							if dep.Name == "on" && len(dep.Arguments) > 0 {
+								task.DependsOn = append(task.DependsOn, dep.Arguments[0].Value)
+							}
+						}
 					}
 				default:
 					panic(fmt.Sprintf("unknown property in task '%s': %s", taskName, child.Name))
