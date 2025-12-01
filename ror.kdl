@@ -1,4 +1,9 @@
-task build {
-  cmd "go build"
+task run {
+  cmd "go run ./cmd/ror"
+  description "Runs the application"
 }
 
+task build {
+  cmd "go build"
+  description "Compiles the application"
+}
