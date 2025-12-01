@@ -7,7 +7,7 @@ task run {
 task build {
   description "Compiles the application"
 
-  cmd "go build"
+  cmd "go build -o ./out/ror ./cmd/ror"
 }
 
 task install {

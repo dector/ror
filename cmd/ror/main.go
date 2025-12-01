@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/dector/kdly"
 )
@@ -23,13 +24,54 @@ type RunnerConfig struct {
 func main() {
 	config := buildConfig()
 
-	// Validation
+	if len(os.Args) < 2 {
+		listTasks(config)
+		return
+	}
+
+	taskName := os.Args[1]
+	if err := runTask(taskName, config); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func runTask(name string, config RunnerConfig) error {
+	task, ok := config.Tasks[name]
+	if !ok {
+		return fmt.Errorf("task '%s' not found", name)
+	}
+
+	for _, dep := range task.DependsOn {
+		if err := runTask(dep, config); err != nil {
+			return err
+		}
+	}
+
+	if task.Command == "" {
+		return nil
+	}
+
+	fmt.Printf("Running task: %s\n", name)
+	// TODO: Support other shells or direct execution
+	cmd := exec.Command("sh", "-c", task.Command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run task '%s': %w", name, err)
+	}
+
+	return nil
+}
+
+func listTasks(config RunnerConfig) {
 	if len(config.Tasks) == 0 {
 		fmt.Println("No tasks found in ror.kdl")
 		return
 	}
 
-	// Print tasks
 	fmt.Println("Available tasks:")
 	for name, task := range config.Tasks {
 		desc := task.Description
