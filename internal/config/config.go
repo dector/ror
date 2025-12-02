@@ -8,6 +8,8 @@ import (
 	"github.com/dector/ror/internal/task"
 )
 
+var compatibilityTaskfile = true
+
 func ParseConfig(filename string) task.RunnerConfig {
 	doc, err := readConfig(filename)
 	if err != nil {
@@ -69,12 +71,17 @@ func ParseConfig(filename string) task.RunnerConfig {
 func readConfig(filename string) (*kdly.Document, error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("ror.kdl not found")
-			os.Exit(1)
-		}
 		return nil, err
 	}
 
 	return kdly.Parse(string(content))
+}
+
+func CheckTaskfileExists() bool {
+	if !compatibilityTaskfile {
+		return false
+	}
+
+	_, err := os.Stat("Taskfile.yml")
+	return err == nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/dector/ror/internal/commands"
 	"github.com/dector/ror/internal/config"
@@ -14,11 +15,37 @@ import (
 var configFile = "ror.kdl"
 
 func main() {
-	config := config.ParseConfig(configFile)
+	// Check if ror.kdl exists
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		// ror.kdl not found, check for Taskfile.yml
+		if config.CheckTaskfileExists() {
+			runTaskfile(os.Args[1:])
+			return
+		}
+		fmt.Println("ror.kdl not found")
+		os.Exit(1)
+	}
 
-	// fmt.Printf("%+v\n", config)
+	cfg := config.ParseConfig(configFile)
 
-	execute(config, utils.SubSlice(os.Args, 1))
+	// fmt.Printf("%+v\n", cfg)
+
+	execute(cfg, utils.SubSlice(os.Args, 1))
+}
+
+func runTaskfile(args []string) {
+	cmd := exec.Command("task", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ExitCode())
+		}
+		fmt.Fprintf(os.Stderr, "Error running task: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func execute(config task.RunnerConfig, args []string) {
