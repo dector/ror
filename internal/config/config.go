@@ -2,16 +2,16 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/dector/kdly"
+	"github.com/dector/ror/internal/io"
 	"github.com/dector/ror/internal/task"
 )
 
 var compatibilityTaskfile = true
 
-func ParseProject(filename string) task.Project {
-	doc, err := readProject(filename)
+func ParseProject(io io.IO, filename string) task.Project {
+	doc, err := readProject(io, filename)
 	if err != nil {
 		panic(err)
 	}
@@ -71,8 +71,8 @@ func ParseProject(filename string) task.Project {
 	return config
 }
 
-func readProject(filename string) (*kdly.Document, error) {
-	content, err := os.ReadFile(filename)
+func readProject(io io.IO, filename string) (*kdly.Document, error) {
+	content, err := io.Files().ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +80,12 @@ func readProject(filename string) (*kdly.Document, error) {
 	return kdly.Parse(string(content))
 }
 
-func CheckTaskfileExists() bool {
+func CheckTaskfileExists(io io.IO) bool {
 	if !compatibilityTaskfile {
 		return false
 	}
 
-	_, err := os.Stat("Taskfile.yml")
+	_, err := io.Files().Stat("Taskfile.yml")
 	return err == nil
 }
 

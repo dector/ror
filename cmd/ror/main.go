@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"slices"
 
 	"github.com/dector/ror/internal"
@@ -10,6 +9,7 @@ import (
 	"github.com/dector/ror/internal/compat"
 	"github.com/dector/ror/internal/config"
 	"github.com/dector/ror/internal/env"
+	"github.com/dector/ror/internal/io"
 	"github.com/dector/ror/internal/task"
 	"github.com/dector/ror/internal/utils"
 )
@@ -17,10 +17,15 @@ import (
 var configFile = "ror.kdl"
 
 func main() {
-	env, args := buildEnvAndArgs()
+	io := io.NewIO()
+	execMain(io)
+}
 
-	ctx := createContext(env, args)
-	execute(ctx)
+func execMain(io io.IO) {
+	env, args := buildEnvAndArgs(io)
+
+	ctx := createContext(io, env, args)
+	execute(io, ctx)
 }
 
 func parseArguments(args []string) internal.ParsedArgs {
@@ -55,10 +60,10 @@ func parseArguments(args []string) internal.ParsedArgs {
 	return parsed
 }
 
-func buildEnvAndArgs() (internal.Env, internal.ParsedArgs) {
+func buildEnvAndArgs(io io.IO) (internal.Env, internal.ParsedArgs) {
 	env := internal.Env{}
 
-	osArgs := utils.SubSlice(os.Args, 1)
+	osArgs := utils.SubSlice(io.Std().Args(), 1)
 	args := parseArguments(osArgs)
 
 	// TODO use count
@@ -70,17 +75,17 @@ func buildEnvAndArgs() (internal.Env, internal.ParsedArgs) {
 	}
 
 	if env.VeryVerboseOutput {
-		fmt.Printf("[DEBUG] Raw arguments: %v\n", osArgs)
-		fmt.Printf("[DEBUG] Parsed ror args: %v\n", args.RorArgs)
-		fmt.Printf("[DEBUG] Parsed task name: %s\n", args.TaskName)
-		fmt.Printf("[DEBUG] Parsed task args: %v\n", args.TaskArgs)
+		io.Std().Printf("[DEBUG] Raw arguments: %v\n", osArgs)
+		io.Std().Printf("[DEBUG] Parsed ror args: %v\n", args.RorArgs)
+		io.Std().Printf("[DEBUG] Parsed task name: %s\n", args.TaskName)
+		io.Std().Printf("[DEBUG] Parsed task args: %v\n", args.TaskArgs)
 	}
 
 	return env, args
 }
 
-func createContext(env internal.Env, args internal.ParsedArgs) internal.Context {
-	project := buildProject(env)
+func createContext(io io.IO, env internal.Env, args internal.ParsedArgs) internal.Context {
+	project := buildProject(io, env)
 	ctx := internal.Context{
 		Env:     env,
 		Project: project,
@@ -90,54 +95,54 @@ func createContext(env internal.Env, args internal.ParsedArgs) internal.Context 
 	return ctx
 }
 
-func buildProject(env internal.Env) task.Project {
+func buildProject(io io.IO, env internal.Env) task.Project {
 	// TODO use it
 	_ = env
 
 	// Check if ror.kdl exists
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+	if _, err := io.Files().Stat(configFile); io.Files().IsNotExist(err) {
 		// ror.kdl not found, check for Taskfile.yml
-		if config.CheckTaskfileExists() {
-			compat.RunTaskfile(utils.SubSlice(os.Args, 1))
-			os.Exit(0)
+		if config.CheckTaskfileExists(io) {
+			compat.RunTaskfile(io, utils.SubSlice(io.Std().Args(), 1))
+			io.Std().Exit(0)
 		}
-		fmt.Println("ror.kdl not found")
-		os.Exit(1)
+		io.Std().Println("ror.kdl not found")
+		io.Std().Exit(1)
 	}
 
-	return config.ParseProject(configFile)
+	return config.ParseProject(io, configFile)
 }
 
-func execute(ctx internal.Context) {
+func execute(io io.IO, ctx internal.Context) {
 	//fmt.Printf("Execute: %+v\n", ctx)
 
 	if ctx.Args.TaskName == "" {
-		commands.CmdListTasks(ctx)
+		commands.CmdListTasks(io, ctx)
 		return
 	}
 
 	switch ctx.Args.TaskName {
 	case "version":
 		if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
-			fmt.Printf("%s\n", env.GetShortVersion())
+			io.Std().Printf("%s\n", env.GetShortVersion())
 		} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--verbose" {
-			fmt.Printf("%s\n", env.GetLongVersion())
+			io.Std().Printf("%s\n", env.GetLongVersion())
 		} else {
-			fmt.Printf("%s\n", env.GetDefaultVersion())
+			io.Std().Printf("%s\n", env.GetDefaultVersion())
 		}
 	case "help":
-		printUsage()
+		printUsage(io)
 	default:
-		if err := runTaskWithDependencies(ctx); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+		if err := runTaskWithDependencies(io, ctx); err != nil {
+			fmt.Fprintf(io.Std().Stderr(), "Error: %v\n", err)
+			io.Std().Exit(1)
 		}
 	}
 }
 
-func printUsage() {
-	fmt.Println("Usage:")
-	fmt.Println("  ror [command]")
-	fmt.Println("")
-	fmt.Println("Use `ror version` to get version")
+func printUsage(io io.IO) {
+	io.Std().Println("Usage:")
+	io.Std().Println("  ror [command]")
+	io.Std().Println("")
+	io.Std().Println("Use `ror version` to get version")
 }

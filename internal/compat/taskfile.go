@@ -2,21 +2,22 @@ package compat
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
+
+	"github.com/dector/ror/internal/io"
 )
 
-func RunTaskfile(args []string) {
+func RunTaskfile(io io.IO, args []string) {
 	cmd := exec.Command("task", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	cmd.Stdout = io.Std().Stdout()
+	cmd.Stderr = io.Std().Stderr()
+	cmd.Stdin = io.Std().Stdin()
 
-	if err := cmd.Run(); err != nil {
+	if err := io.Shell().RunCommand(cmd); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitErr.ExitCode())
+			io.Std().Exit(exitErr.ExitCode())
 		}
-		fmt.Fprintf(os.Stderr, "Error running task: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(io.Std().Stderr(), "Error running task: %v\n", err)
+		io.Std().Exit(1)
 	}
 }
