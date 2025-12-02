@@ -7,7 +7,14 @@ task run {
 task build {
   description "Compiles the application"
 
-  cmd #"go build -o out/ror -ldflags="-X 'github.com/dector/ror/internal/env.commit=$(git describe --tags --always --long --dirty)' -X 'github.com/dector/ror/internal/env.time=$(date +%Y-%m-%dT%H:%M:%SZ)'" ./cmd/ror"#
+  cmd #"go build -o out/ror %%flags%% ./cmd/ror"# {
+    where flags=#"-ldflags="-X '%%env-pkg%%.commit=%%commit%%' -X '%%env-pkg%%.time=%%time%%'""# {
+      where env-pkg="github.com/dector/ror/internal/env"
+
+      where commit="git describe --tags --always --long --dirty" { execute }
+      where time="date +%Y-%m-%dT%H:%M:%SZ" { execute }
+    }
+  }
 }
 
 task install {

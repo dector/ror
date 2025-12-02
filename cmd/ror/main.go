@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"slices"
 
 	"github.com/dector/ror/internal"
 	"github.com/dector/ror/internal/commands"
+	"github.com/dector/ror/internal/compat"
 	"github.com/dector/ror/internal/config"
 	"github.com/dector/ror/internal/env"
 	"github.com/dector/ror/internal/task"
@@ -16,21 +17,9 @@ import (
 var configFile = "ror.kdl"
 
 func main() {
-	// Check if ror.kdl exists
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		// ror.kdl not found, check for Taskfile.yml
-		if config.CheckTaskfileExists() {
-			runTaskfile(os.Args[1:])
-			return
-		}
-		fmt.Println("ror.kdl not found")
-		os.Exit(1)
-	}
+	env, args := buildEnvAndArgs()
 
-	cfg := config.ParseConfig(configFile)
-
-	args := parseArguments(utils.SubSlice(os.Args, 1))
-	ctx := createContext(cfg, args)
+	ctx := createContext(env, args)
 	execute(ctx)
 }
 
@@ -57,43 +46,66 @@ func parseArguments(args []string) internal.ParsedArgs {
 	// Collect remaining arguments as task arguments
 	taskArgs = utils.SubSlice(args, i)
 
-	return internal.ParsedArgs{
+	parsed := internal.ParsedArgs{
 		RorArgs:  rorArgs,
 		TaskName: taskName,
 		TaskArgs: taskArgs,
 	}
+
+	return parsed
 }
 
-func createContext(config task.RunnerConfig, args internal.ParsedArgs) internal.Context {
-	ctx := internal.Context{
-		VerboseOutput: false,
+func buildEnvAndArgs() (internal.Env, internal.ParsedArgs) {
+	env := internal.Env{}
 
-		Config: config,
-		Args:   args,
+	osArgs := utils.SubSlice(os.Args, 1)
+	args := parseArguments(osArgs)
+
+	// TODO use count
+	if slices.Contains(args.RorArgs, "-v") {
+		env.VerboseOutput = true
+	}
+	if slices.Contains(args.RorArgs, "-vvv") {
+		env.VeryVerboseOutput = true
 	}
 
-	for _, arg := range args.RorArgs {
-		if arg == "-v" {
-			ctx.VerboseOutput = true
-		}
+	if env.VeryVerboseOutput {
+		fmt.Printf("[DEBUG] Raw arguments: %v\n", osArgs)
+		fmt.Printf("[DEBUG] Parsed ror args: %v\n", args.RorArgs)
+		fmt.Printf("[DEBUG] Parsed task name: %s\n", args.TaskName)
+		fmt.Printf("[DEBUG] Parsed task args: %v\n", args.TaskArgs)
+	}
+
+	return env, args
+}
+
+func createContext(env internal.Env, args internal.ParsedArgs) internal.Context {
+	project := buildProject(env)
+	ctx := internal.Context{
+		Env:     env,
+		Project: project,
+		Args:    args,
 	}
 
 	return ctx
 }
 
-func runTaskfile(args []string) {
-	cmd := exec.Command("task", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+func buildProject(env internal.Env) task.Project {
+	// TODO use it
+	_ = env
 
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitErr.ExitCode())
+	// Check if ror.kdl exists
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		// ror.kdl not found, check for Taskfile.yml
+		if config.CheckTaskfileExists() {
+			compat.RunTaskfile(utils.SubSlice(os.Args, 1))
+			os.Exit(0)
 		}
-		fmt.Fprintf(os.Stderr, "Error running task: %v\n", err)
+		fmt.Println("ror.kdl not found")
 		os.Exit(1)
 	}
+
+	return config.ParseProject(configFile)
 }
 
 func execute(ctx internal.Context) {
@@ -108,7 +120,7 @@ func execute(ctx internal.Context) {
 	case "version":
 		if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
 			fmt.Printf("%s\n", env.GetShortVersion())
-		} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--long" {
+		} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--verbose" {
 			fmt.Printf("%s\n", env.GetLongVersion())
 		} else {
 			fmt.Printf("%s\n", env.GetDefaultVersion())

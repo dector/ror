@@ -8,8 +8,13 @@ type ParsedArgs struct {
 	TaskArgs []string
 }
 
+type Env struct {
+	VerboseOutput     bool
+	VeryVerboseOutput bool
+}
+
 type Context struct {
-	VerboseOutput bool
-	Config        task.RunnerConfig
-	Args          ParsedArgs
+	Env     Env
+	Project task.Project
+	Args    ParsedArgs
 }
