@@ -9,6 +9,8 @@ import (
 	"github.com/dector/ror/internal/io"
 )
 
+var VariableRegexp = regexp.MustCompile(`%%([a-zA-Z0-9_-]+)%%`)
+
 // ExpandCommand expands a CommandTemplate by resolving all variables
 func ExpandCommand(io io.IO, template *CommandTemplate, veryVerbose bool) (string, error) {
 	if template == nil {
@@ -130,8 +132,7 @@ func substituteVariables(io io.IO, text string, scope map[string]string, veryVer
 
 // findUndefinedVariables finds all %%variable%% patterns in text
 func findUndefinedVariables(text string) []string {
-	re := regexp.MustCompile(`%%([a-zA-Z0-9_-]+)%%`)
-	matches := re.FindAllStringSubmatch(text, -1)
+	matches := VariableRegexp.FindAllStringSubmatch(text, -1)
 
 	var variables []string
 	for _, match := range matches {

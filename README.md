@@ -11,6 +11,23 @@ Ror is a [PFE](https://en.wikipedia.org/wiki/Not_invented_here) task runner.
 
 [See Examples](#examples)
 
+# CLI Usage
+
+```bash
+ror [flags] [task] [task args]
+```
+
+## Flags
+
+-   `--export-taskfile`: Export `ror.kdl` to `Taskfile.yml` (for compatibility with [Task](https://taskfile.dev/)).
+-   `-v`: Verbose output.
+-   `-vvv`: Very verbose output.
+
+## Commands
+
+-   `version`: Print version.
+-   `help`: Print help message.
+
 # Format Description
 
 Ror uses [KDL v2](https://kdl.dev/) for its configuration file `ror.kdl`. The file defines a set of tasks that can be executed.

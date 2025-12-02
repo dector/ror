@@ -25,6 +25,7 @@ func execMain(io io.IO) {
 	env, args := buildEnvAndArgs(io)
 
 	ctx := createContext(io, env, args)
+
 	execute(io, ctx)
 }
 
@@ -116,6 +117,15 @@ func buildProject(io io.IO, env internal.Env) task.Project {
 func execute(io io.IO, ctx internal.Context) {
 	//fmt.Printf("Execute: %+v\n", ctx)
 
+	if slices.Contains(ctx.Args.RorArgs, "--export-taskfile") {
+		if config.CheckTaskfileExists(io) {
+			fmt.Fprintln(io.Std().Stderr(), "Error: Taskfile.yml already exists")
+			io.Std().Exit(1)
+		}
+		compat.ExportTaskfile(io, ctx.Project)
+		return
+	}
+
 	if ctx.Args.TaskName == "" {
 		commands.CmdListTasks(io, ctx)
 		return
@@ -142,7 +152,14 @@ func execute(io io.IO, ctx internal.Context) {
 
 func printUsage(io io.IO) {
 	io.Std().Println("Usage:")
-	io.Std().Println("  ror [command]")
+	io.Std().Println("  ror [flags] [task] [task args]")
 	io.Std().Println("")
-	io.Std().Println("Use `ror version` to get version")
+	io.Std().Println("Flags:")
+	io.Std().Println("  --export-taskfile   Export ror.kdl to Taskfile.yml")
+	io.Std().Println("  -v                  Verbose output")
+	io.Std().Println("  -vvv                Very verbose output")
+	io.Std().Println("")
+	io.Std().Println("Commands:")
+	io.Std().Println("  version             Print version")
+	io.Std().Println("  help                Print this help message")
 }
