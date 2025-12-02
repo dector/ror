@@ -11,19 +11,6 @@ The project aims to provide granular control over task execution (fine-tuning) w
 *   **Task Execution:** Simple command running capabilities.
 *   **Dependencies:** (Planned) Ability to define execution order between tasks.
 
-## Configuration Example
-`ror` uses a straightforward node structure for defining tasks:
-
-```kdl
-task "build" {
-    cmd "go build -o ./out/ror ./cmd/ror"
-}
-
-task "test" {
-    cmd "go test ./..."
-}
-```
-
 ## Future Roadmap / TBD
 The following features are identified as important but deferred for the initial MVP:
 *   **Concurrency:** Parallel execution of independent tasks.
