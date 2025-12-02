@@ -3,6 +3,10 @@
 
 # Ror
 
+<p align="center">
+  <img src="./docs/images/ror-logo.webp" alt="Ror Logo">
+</p>
+
 Ror is a [PFE](https://en.wikipedia.org/wiki/Not_invented_here) task runner.
 
 [See Examples](#examples)
