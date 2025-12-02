@@ -5,10 +5,9 @@ func SubSlice(slice []string, from int) []string {
 		return slice
 	}
 
-	switch len(slice) {
-	case 1:
-		return []string{}
-	default:
-		return slice[1:]
+	if from >= len(slice) {
+		return slice
 	}
+
+	return slice[from:]
 }
