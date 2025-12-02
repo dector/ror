@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/dector/ror/internal"
 	"github.com/dector/ror/internal/task"
 )
 
@@ -21,16 +22,16 @@ func newExecutionState() *executionState {
 	}
 }
 
-func runTaskWithDependencies(name string, config task.RunnerConfig, args []string) error {
+func runTaskWithDependencies(ctx internal.Context) error {
 	state := newExecutionState()
-	if err := runTask(name, config, args, state); err != nil {
+	if err := runTask(ctx.Args.TaskName, ctx.Config, ctx.Args.TaskArgs, state, ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func runTask(name string, config task.RunnerConfig, args []string, state *executionState) error {
+func runTask(name string, config task.RunnerConfig, args []string, state *executionState, ctx internal.Context) error {
 	if state.visiting[name] {
 		return fmt.Errorf("circular dependency detected: %s", name)
 	}
@@ -47,13 +48,15 @@ func runTask(name string, config task.RunnerConfig, args []string, state *execut
 	}
 
 	for _, dep := range task.DependsOn {
-		if err := runTask(dep, config, nil, state); err != nil {
+		if err := runTask(dep, config, nil, state, ctx); err != nil {
 			return err
 		}
 	}
 
 	if task.Command != "" {
-		fmt.Printf("Running task: %s\n", name)
+		if ctx.VerboseOutput {
+			fmt.Printf("Running task: %s\n", name)
+		}
 
 		// Build command args array from task command and args
 		commandArgs := []string{task.Command}

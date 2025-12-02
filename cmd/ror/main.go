@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/dector/ror/internal"
 	"github.com/dector/ror/internal/commands"
 	"github.com/dector/ror/internal/config"
 	"github.com/dector/ror/internal/env"
@@ -30,7 +31,56 @@ func main() {
 
 	// fmt.Printf("%+v\n", cfg)
 
-	execute(cfg, utils.SubSlice(os.Args, 1))
+	args := parseArguments(utils.SubSlice(os.Args, 1))
+	ctx := createContext(cfg, args)
+	execute(ctx)
+}
+
+func parseArguments(args []string) internal.ParsedArgs {
+	var rorArgs []string
+	var taskName string
+	var taskArgs []string
+
+	i := 0
+	// Collect all arguments starting with '-', '+', or '--' before any task name
+	for i < len(args) {
+		arg := args[i]
+		if len(arg) > 0 && (arg[0] == '-' || arg[0] == '+') {
+			rorArgs = append(rorArgs, arg)
+			i++
+		} else {
+			// Found the task name
+			taskName = arg
+			i++
+			break
+		}
+	}
+
+	// Collect remaining arguments as task arguments
+	taskArgs = utils.SubSlice(args, i)
+
+	return internal.ParsedArgs{
+		RorArgs:  rorArgs,
+		TaskName: taskName,
+		TaskArgs: taskArgs,
+	}
+}
+
+func createContext(config task.RunnerConfig, args internal.ParsedArgs) internal.Context {
+	ctx := internal.Context{
+		VerboseOutput: false,
+
+		Config: config,
+		Args:   args,
+	}
+
+	for _, arg := range args.RorArgs {
+		if arg == "-v" {
+			ctx.VerboseOutput = true
+		}
+	}
+
+	return ctx
 }
 
 func runTaskfile(args []string) {
@@ -48,18 +98,17 @@ func runTaskfile(args []string) {
 	}
 }
 
-func execute(config task.RunnerConfig, args []string) {
-	if len(args) == 0 {
-		commands.CmdListTasks(config)
+func execute(ctx internal.Context) {
+	if ctx.Args.TaskName == "" {
+		commands.CmdListTasks(ctx)
 		return
 	}
 
-	command := args[0]
-	switch command {
-	case "version", "+version":
-		if len(args) > 1 && args[1] == "--short" {
+	switch ctx.Args.TaskName {
+	case "version":
+		if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
 			fmt.Printf("%s\n", env.GetShortVersion())
-		} else if len(args) > 1 && args[1] == "--long" {
+		} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--long" {
 			fmt.Printf("%s\n", env.GetLongVersion())
 		} else {
 			fmt.Printf("%s\n", env.GetDefaultVersion())
@@ -67,9 +116,7 @@ func execute(config task.RunnerConfig, args []string) {
 	case "help":
 		printUsage()
 	default:
-		taskName := args[0]
-		taskArgs := utils.SubSlice(args, 1)
-		if err := runTaskWithDependencies(taskName, config, taskArgs); err != nil {
+		if err := runTaskWithDependencies(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

@@ -3,17 +3,17 @@ package commands
 import (
 	"fmt"
 
-	"github.com/dector/ror/internal/task"
+	"github.com/dector/ror/internal"
 )
 
-func CmdListTasks(config task.RunnerConfig) {
-	if len(config.Tasks) == 0 {
+func CmdListTasks(ctx internal.Context) {
+	if len(ctx.Config.Tasks) == 0 {
 		fmt.Println("No tasks found in ror.kdl")
 		return
 	}
 
 	fmt.Println("Available tasks:")
-	for name, task := range config.Tasks {
+	for name, task := range ctx.Config.Tasks {
 		desc := task.Description
 		if desc == "" {
 			desc = "(no description)"
