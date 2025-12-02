@@ -5,6 +5,8 @@
 
 Ror is a [PFE](https://en.wikipedia.org/wiki/Not_invented_here) task runner.
 
+[See Examples](#examples)
+
 # Format Description
 
 Ror uses [KDL v2](https://kdl.dev/) for its configuration file `ror.kdl`. The file defines a set of tasks that can be executed.
@@ -81,14 +83,47 @@ where current-date="date %%format%%" {
 }
 ```
 
-### Example
+### Examples
+
+#### Basic Usage
+
+A simple task to run a command.
 
 ```kdl
-task example {
-  description "An example task"
- 
-  cmd "echo Today is %%today%%" {
-    where today="date +%Y-%m-%d" { execute }
+task run {
+  description "Run the project"
+
+  cmd "go run ./main.go"
+}
+```
+
+#### Complex Build (Variables)
+
+A build task that injects git commit hash and compilation time into the binary.
+
+```kdl
+task build {
+  description "Build the application"
+
+  cmd "go build -o out/app -ldflags='-X main.commit=%%commit%% -X main.date=%%date%%' ./cmd/app" {
+    where commit="git describe --tags --always --dirty" { execute }
+    where date="date +%Y-%m-%dT%H:%M:%SZ" { execute }
   }
+}
+```
+
+#### Dependencies
+
+A deploy task that ensures the application is tested and built first.
+
+```kdl
+task deploy {
+  description "Deploy the application"
+  depends {
+    on "test"
+    on "build"
+  }
+  
+  cmd "./scripts/deploy.sh"
 }
 ```
