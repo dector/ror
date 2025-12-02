@@ -18,3 +18,15 @@ task install {
 
   cmd "cp ./out/ror ~/.local/bin/ror"
 }
+
+task go {
+  description "Run Go directly"
+
+  cmd "go"
+}
+
+task echo {
+  description "Echoes all arguments"
+
+  cmd "echo"
+}

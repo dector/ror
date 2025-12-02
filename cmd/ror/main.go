@@ -56,7 +56,7 @@ func execute(config task.RunnerConfig, args []string) {
 
 	command := args[0]
 	switch command {
-	case "version":
+	case "version", "+version":
 		if len(args) > 1 && args[1] == "--short" {
 			fmt.Printf("%s\n", env.GetShortVersion())
 		} else if len(args) > 1 && args[1] == "--long" {
@@ -68,7 +68,8 @@ func execute(config task.RunnerConfig, args []string) {
 		printUsage()
 	default:
 		taskName := args[0]
-		if err := runTaskWithDependencies(taskName, config); err != nil {
+		taskArgs := utils.SubSlice(args, 1)
+		if err := runTaskWithDependencies(taskName, config, taskArgs); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

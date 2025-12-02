@@ -4,30 +4,42 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/dector/ror/internal/task"
 )
 
-func runTaskWithDependencies(name string, config task.RunnerConfig) error {
-	executed := make(map[string]bool)
-	visiting := make(map[string]bool)
-	if err := runTask(name, config, executed, visiting); err != nil {
+type executionState struct {
+	executed map[string]bool
+	visiting map[string]bool
+}
+
+func newExecutionState() *executionState {
+	return &executionState{
+		executed: make(map[string]bool),
+		visiting: make(map[string]bool),
+	}
+}
+
+func runTaskWithDependencies(name string, config task.RunnerConfig, args []string) error {
+	state := newExecutionState()
+	if err := runTask(name, config, args, state); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func runTask(name string, config task.RunnerConfig, executed map[string]bool, visiting map[string]bool) error {
-	if visiting[name] {
+func runTask(name string, config task.RunnerConfig, args []string, state *executionState) error {
+	if state.visiting[name] {
 		return fmt.Errorf("circular dependency detected: %s", name)
 	}
-	if executed[name] {
+	if state.executed[name] {
 		return nil
 	}
 
-	visiting[name] = true
-	defer func() { delete(visiting, name) }()
+	state.visiting[name] = true
+	defer func() { delete(state.visiting, name) }()
 
 	task, ok := config.Tasks[name]
 	if !ok {
@@ -35,15 +47,19 @@ func runTask(name string, config task.RunnerConfig, executed map[string]bool, vi
 	}
 
 	for _, dep := range task.DependsOn {
-		if err := runTask(dep, config, executed, visiting); err != nil {
+		if err := runTask(dep, config, nil, state); err != nil {
 			return err
 		}
 	}
 
 	if task.Command != "" {
 		fmt.Printf("Running task: %s\n", name)
-		// TODO: Support other shells or direct execution
-		cmd := exec.Command("sh", "-c", task.Command)
+
+		// Build command args array from task command and args
+		commandArgs := []string{task.Command}
+		commandArgs = append(commandArgs, args...)
+
+		cmd := exec.Command("sh", "-c", strings.Join(commandArgs, " "))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
@@ -53,6 +69,6 @@ func runTask(name string, config task.RunnerConfig, executed map[string]bool, vi
 		}
 	}
 
-	executed[name] = true
+	state.executed[name] = true
 	return nil
 }
