@@ -29,8 +29,6 @@ func main() {
 
 	cfg := config.ParseConfig(configFile)
 
-	// fmt.Printf("%+v\n", cfg)
-
 	args := parseArguments(utils.SubSlice(os.Args, 1))
 	ctx := createContext(cfg, args)
 	execute(ctx)
@@ -99,6 +97,8 @@ func runTaskfile(args []string) {
 }
 
 func execute(ctx internal.Context) {
+	//fmt.Printf("Execute: %+v\n", ctx)
+
 	if ctx.Args.TaskName == "" {
 		commands.CmdListTasks(ctx)
 		return

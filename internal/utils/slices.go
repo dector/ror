@@ -6,7 +6,7 @@ func SubSlice(slice []string, from int) []string {
 	}
 
 	if from >= len(slice) {
-		return slice
+		return []string{}
 	}
 
 	return slice[from:]
