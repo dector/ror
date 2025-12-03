@@ -32,6 +32,15 @@ task go {
   cmd "go"
 }
 
+task test:env {
+  description "Setup env for tasks"
+
+  env GREET="Hello"
+  env NAME="User"
+
+  cmd "echo $GREET $NAME"
+}
+
 task echo {
   description "Echoes all arguments"
 

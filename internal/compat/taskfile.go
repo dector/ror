@@ -53,6 +53,19 @@ func ExportTaskfile(io io.IO, project task.Project) {
 			}
 		}
 
+		if len(t.EnvVars) > 0 {
+			fmt.Fprintln(&buf, "    env:")
+			// Sort env vars for deterministic output
+			var envKeys []string
+			for k := range t.EnvVars {
+				envKeys = append(envKeys, k)
+			}
+			sort.Strings(envKeys)
+			for _, k := range envKeys {
+				fmt.Fprintf(&buf, "      %s: %s\n", k, t.EnvVars[k])
+			}
+		}
+
 		cmd := t.Command
 		vars := make(map[string]task.WhereVariable)
 

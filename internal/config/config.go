@@ -35,6 +35,7 @@ func ParseProject(io io.IO, filename string) task.Project {
 		task := task.Task{
 			Name:      taskName,
 			DependsOn: []string{},
+			EnvVars:   make(map[string]string),
 		}
 
 		if node.Children != nil {
@@ -58,6 +59,11 @@ func ParseProject(io io.IO, filename string) task.Project {
 								task.DependsOn = append(task.DependsOn, dep.Arguments[0].Value)
 							}
 						}
+					}
+				case "env":
+					// env KEY="value" (property syntax)
+					for _, prop := range child.Properties {
+						task.EnvVars[prop.Key] = prop.Value.Value
 					}
 				default:
 					panic(fmt.Sprintf("unknown property in task '%s': %s", taskName, child.Name))

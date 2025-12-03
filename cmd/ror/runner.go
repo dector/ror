@@ -111,6 +111,11 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 		cmd.Stderr = io.Std().Stderr()
 		cmd.Stdin = io.Std().Stdin()
 
+		// Set environment variables from the task
+		if taskEnv := buildTaskEnv(io, task, env); taskEnv != nil {
+			cmd.Env = taskEnv
+		}
+
 		if err := io.Shell().RunCommand(cmd); err != nil {
 			return fmt.Errorf("failed to run task '%s': %w", name, err)
 		}
@@ -118,4 +123,33 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 
 	state.executed[name] = true
 	return nil
+}
+
+// buildTaskEnv builds the environment variables for task execution
+// by combining the current environment with task-specific variables
+func buildTaskEnv(io io.IO, task taskpkg.Task, env internal.Env) []string {
+	if len(task.EnvVars) == 0 {
+		return nil
+	}
+
+	if env.VeryVerboseOutput {
+		io.Std().Printf("[DEBUG] Setting environment variables:\n")
+		for k, v := range task.EnvVars {
+			io.Std().Printf("[DEBUG]   %s=%s\n", k, v)
+		}
+	}
+
+	// Get current environment and append task-specific vars
+	currentEnv := io.Shell().Environ()
+	taskEnvVars := formatEnvVars(task.EnvVars)
+	return append(currentEnv, taskEnvVars...)
+}
+
+// formatEnvVars converts a map of environment variables to a slice of "KEY=VALUE" strings
+func formatEnvVars(envVars map[string]string) []string {
+	result := make([]string, 0, len(envVars))
+	for k, v := range envVars {
+		result = append(result, fmt.Sprintf("%s=%s", k, v))
+	}
+	return result
 }

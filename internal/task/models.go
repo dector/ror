@@ -28,6 +28,7 @@ type Task struct {
 	CommandTemplate *CommandTemplate // New: for commands with where blocks
 	Description     string
 	DependsOn       []string
+	EnvVars         map[string]string // Environment variables for the task
 }
 
 type Project struct {
