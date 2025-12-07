@@ -12,13 +12,15 @@ func CmdListTasks(io io.IO, ctx internal.Context) {
 	green := color.New(color.FgGreen).SprintFunc()
 	dim := color.New(color.Faint).SprintFunc()
 
-	if len(ctx.Project.Tasks) == 0 {
+	if ctx.Project.Tasks.Len() == 0 {
 		io.Std().Println("No tasks found in ror.kdl")
 		return
 	}
 
 	io.Std().Println(cyan("Project tasks:"))
-	for name, task := range ctx.Project.Tasks {
+	for pair := ctx.Project.Tasks.Oldest(); pair != nil; pair = pair.Next() {
+		name := pair.Key
+		task := pair.Value
 		desc := task.Description
 		if desc == "" {
 			desc = dim("(no description)")

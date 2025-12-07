@@ -1,5 +1,9 @@
 package task
 
+import (
+	orderedmap "github.com/wk8/go-ordered-map/v2"
+)
+
 // WhereType represents the type of a where variable
 type WhereType string
 
@@ -32,5 +36,5 @@ type Task struct {
 }
 
 type Project struct {
-	Tasks map[string]Task
+	Tasks *orderedmap.OrderedMap[string, Task]
 }

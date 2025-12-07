@@ -28,19 +28,14 @@ func RunTaskfile(io io.IO, args []string) {
 func ExportTaskfile(io io.IO, project task.Project) {
 	var buf bytes.Buffer
 
-	// sort tasks
-	var keys []string
-	for k := range project.Tasks {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
 	fmt.Fprintln(&buf, "version: '3'")
 	fmt.Fprintln(&buf, "")
 	fmt.Fprintln(&buf, "tasks:")
 
-	for _, name := range keys {
-		t := project.Tasks[name]
+	// Iterate in order as defined in ror.kdl
+	for pair := project.Tasks.Oldest(); pair != nil; pair = pair.Next() {
+		name := pair.Key
+		t := pair.Value
 		fmt.Fprintf(&buf, "  %s:\n", name)
 		if t.Description != "" {
 			fmt.Fprintf(&buf, "    desc: %s\n", t.Description)

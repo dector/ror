@@ -42,7 +42,7 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 	state.visiting[name] = true
 	defer func() { delete(state.visiting, name) }()
 
-	task, ok := config.Tasks[name]
+	task, ok := config.Tasks.Get(name)
 	if !ok {
 		return fmt.Errorf("task '%s' not found", name)
 	}

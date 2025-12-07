@@ -6,6 +6,7 @@ import (
 	"github.com/dector/kdly"
 	"github.com/dector/ror/internal/io"
 	"github.com/dector/ror/internal/task"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 var compatibilityTaskfile = true
@@ -17,7 +18,7 @@ func ParseProject(io io.IO, filename string) task.Project {
 	}
 
 	config := task.Project{
-		Tasks: make(map[string]task.Task),
+		Tasks: orderedmap.New[string, task.Task](),
 	}
 
 	// Iterate over top-level nodes
@@ -71,7 +72,7 @@ func ParseProject(io io.IO, filename string) task.Project {
 			}
 		}
 
-		config.Tasks[taskName] = task
+		config.Tasks.Set(taskName, task)
 	}
 
 	return config
