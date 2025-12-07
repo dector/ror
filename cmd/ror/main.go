@@ -63,24 +63,49 @@ func parseArguments(args []string) internal.ParsedArgs {
 }
 
 func buildEnvAndArgs(io io.IO) (internal.Env, internal.ParsedArgs) {
-	env := internal.Env{}
+	env := internal.Env{
+		VerbosityLevel: task.VerbosityNormal,
+	}
 
 	osArgs := utils.SubSlice(io.Std().Args(), 1)
 	args := parseArguments(osArgs)
 
-	// TODO use count
-	if slices.Contains(args.RorArgs, "-v") {
-		env.VerboseOutput = true
+	// Find out verbosity
+	vLevel := 0
+	for _, arg := range args.RorArgs {
+		switch arg {
+		case "-v":
+			vLevel++
+		case "-vv":
+			vLevel += 2
+		case "-vvv":
+			vLevel += 3
+		case "-q", "--quiet":
+			vLevel -= 1
+		case "--silent":
+			vLevel -= 2
+		}
 	}
-	if slices.Contains(args.RorArgs, "-vvv") {
-		env.VeryVerboseOutput = true
+	if vLevel >= 3 {
+		env.VerbosityLevel = task.VerbosityDebug
+	} else if vLevel == 2 {
+		env.VerbosityLevel = task.VerbosityVeryVerbose
+	} else if vLevel == 1 {
+		env.VerbosityLevel = task.VerbosityVerbose
+	} else if vLevel == 0 {
+		env.VerbosityLevel = task.VerbosityNormal
+	} else if vLevel == -1 {
+		env.VerbosityLevel = task.VerbosityQuiet
+	} else if vLevel <= -2 {
+		env.VerbosityLevel = task.VerbositySilent
 	}
 
-	if env.VeryVerboseOutput {
+	if env.VerbosityLevel >= task.VerbosityDebug {
 		io.Std().Printf("[DEBUG] Raw arguments: %v\n", osArgs)
 		io.Std().Printf("[DEBUG] Parsed ror args: %v\n", args.RorArgs)
 		io.Std().Printf("[DEBUG] Parsed task name: %s\n", args.TaskName)
 		io.Std().Printf("[DEBUG] Parsed task args: %v\n", args.TaskArgs)
+		io.Std().Printf("[DEBUG] Verbosity level: %d\n", env.VerbosityLevel)
 	}
 
 	return env, args
@@ -109,7 +134,7 @@ func buildProject(io io.IO, env internal.Env) task.Project {
 			io.Std().Exit(0)
 		}
 		red := color.New(color.FgRed, color.Bold).SprintFunc()
-		io.Std().Printf("%s ror.kdl not found\n", red("Error:"))
+		fmt.Fprintf(io.Std().Stderr(), "%s ror.kdl not found\n", red("Error:"))
 		io.Std().Exit(1)
 	}
 
@@ -136,15 +161,18 @@ func execute(io io.IO, ctx internal.Context) {
 
 	switch ctx.Args.TaskName {
 	case "version":
-		if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
-			io.Std().Printf("%s\n", env.GetShortVersion())
-		} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--verbose" {
-			io.Std().Printf("%s\n", env.GetLongVersion())
-		} else {
-			io.Std().Printf("%s\n", env.GetDefaultVersion())
+		// Version command respects verbosity (silent and quiet suppress output)
+		if ctx.Env.VerbosityLevel >= task.VerbosityNormal {
+			if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
+				io.Std().Printf("%s\n", env.GetShortVersion())
+			} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--verbose" {
+				io.Std().Printf("%s\n", env.GetLongVersion())
+			} else {
+				io.Std().Printf("%s\n", env.GetDefaultVersion())
+			}
 		}
 	case "help":
-		printUsage(io)
+		printUsage(io, ctx.Env)
 	default:
 		if err := runTaskWithDependencies(io, ctx); err != nil {
 			red := color.New(color.FgRed, color.Bold).SprintFunc()
@@ -154,7 +182,12 @@ func execute(io io.IO, ctx internal.Context) {
 	}
 }
 
-func printUsage(io io.IO) {
+func printUsage(io io.IO, env internal.Env) {
+	// Silent and quiet modes: no output
+	if env.VerbosityLevel < task.VerbosityNormal {
+		return
+	}
+
 	bold := color.New(color.Bold).SprintFunc()
 	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
@@ -170,8 +203,11 @@ func printUsage(io io.IO) {
 
 	io.Std().Println(cyan("Flags:"))
 	io.Std().Printf("  %s   Export ror.kdl to Taskfile.yml\n", yellow("--export-taskfile"))
-	io.Std().Printf("  %s                  Verbose output\n", yellow("-v"))
-	io.Std().Printf("  %s                Very verbose output\n", yellow("-vvv"))
+	io.Std().Printf("  %s             Silent mode (no output)\n", yellow("--silent"))
+	io.Std().Printf("  %s, %s       Quiet mode (errors only)\n", yellow("-q"), yellow("--quiet"))
+	io.Std().Printf("  %s                  Verbose output (level 1)\n", yellow("-v"))
+	io.Std().Printf("  %s                 Very verbose output (level 2)\n", yellow("-vv"))
+	io.Std().Printf("  %s               Debug output (level 3)\n", yellow("-vvv"))
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Commands:"))

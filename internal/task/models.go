@@ -4,6 +4,16 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
+// Verbosity levels
+const (
+	VerbositySilent      = -2
+	VerbosityQuiet       = -1
+	VerbosityNormal      = 0
+	VerbosityVerbose     = 1
+	VerbosityVeryVerbose = 2
+	VerbosityDebug       = 3
+)
+
 // WhereType represents the type of a where variable
 type WhereType string
 

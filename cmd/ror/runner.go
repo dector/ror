@@ -47,7 +47,7 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 		return fmt.Errorf("task '%s' not found", name)
 	}
 
-	if env.VeryVerboseOutput && len(task.DependsOn) > 0 {
+	if env.VerbosityLevel >= taskpkg.VerbosityDebug && len(task.DependsOn) > 0 {
 		io.Std().Printf("[DEBUG] Task '%s' has dependencies: %v\n", name, task.DependsOn)
 	}
 
@@ -58,7 +58,7 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 	}
 
 	if task.Command != "" || task.CommandTemplate != nil {
-		if env.VerboseOutput {
+		if env.VerbosityLevel >= taskpkg.VerbosityVerbose {
 			io.Std().Printf("Running task: %s\n", name)
 		}
 
@@ -67,7 +67,7 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 		var err error
 
 		if task.CommandTemplate != nil {
-			if env.VeryVerboseOutput {
+			if env.VerbosityLevel >= taskpkg.VerbosityDebug {
 				io.Std().Printf("[DEBUG] Command command before expansion: %s\n", task.CommandTemplate.Template)
 				if len(task.CommandTemplate.Variables) > 0 {
 					io.Std().Printf("[DEBUG] Variables to expand:\n")
@@ -78,18 +78,18 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 			}
 
 			// Expand variables in template
-			finalCommand, err = taskpkg.ExpandCommand(io, task.CommandTemplate, env.VeryVerboseOutput)
+			finalCommand, err = taskpkg.ExpandCommand(io, task.CommandTemplate, env.VerbosityLevel)
 			if err != nil {
 				return fmt.Errorf("failed to expand command template for task '%s': %w", name, err)
 			}
 
-			if env.VerboseOutput {
+			if env.VerbosityLevel >= taskpkg.VerbosityVeryVerbose {
 				io.Std().Printf("Expanded command: %s\n", finalCommand)
 			}
 		} else {
 			// Simple command
 			finalCommand = task.Command
-			if env.VeryVerboseOutput {
+			if env.VerbosityLevel >= taskpkg.VerbosityDebug {
 				io.Std().Printf("[DEBUG] Simple command (no expansion needed): %s\n", finalCommand)
 			}
 		}
@@ -99,7 +99,7 @@ func runTask(io io.IO, name string, config taskpkg.Project, args []string, state
 		commandArgs = append(commandArgs, args...)
 
 		fullCommand := strings.Join(commandArgs, " ")
-		if env.VeryVerboseOutput {
+		if env.VerbosityLevel >= taskpkg.VerbosityDebug {
 			io.Std().Printf("[DEBUG] Final shell command: sh -c \"%s\"\n", fullCommand)
 			if len(args) > 0 {
 				io.Std().Printf("[DEBUG] Task arguments: %v\n", args)
@@ -132,7 +132,7 @@ func buildTaskEnv(io io.IO, task taskpkg.Task, env internal.Env) []string {
 		return nil
 	}
 
-	if env.VeryVerboseOutput {
+	if env.VerbosityLevel >= taskpkg.VerbosityDebug {
 		io.Std().Printf("[DEBUG] Setting environment variables:\n")
 		for k, v := range task.EnvVars {
 			io.Std().Printf("[DEBUG]   %s=%s\n", k, v)

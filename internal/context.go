@@ -9,8 +9,7 @@ type ParsedArgs struct {
 }
 
 type Env struct {
-	VerboseOutput     bool
-	VeryVerboseOutput bool
+	VerbosityLevel int
 }
 
 type Context struct {

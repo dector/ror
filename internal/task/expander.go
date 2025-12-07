@@ -12,7 +12,7 @@ import (
 var VariableRegexp = regexp.MustCompile(`%%([a-zA-Z0-9_-]+)%%`)
 
 // ExpandCommand expands a CommandTemplate by resolving all variables
-func ExpandCommand(io io.IO, template *CommandTemplate, veryVerbose bool) (string, error) {
+func ExpandCommand(io io.IO, template *CommandTemplate, verbosityLevel int) (string, error) {
 	if template == nil {
 		return "", fmt.Errorf("nil command template")
 	}
@@ -21,12 +21,12 @@ func ExpandCommand(io io.IO, template *CommandTemplate, veryVerbose bool) (strin
 	scope := make(map[string]string)
 
 	for _, variable := range template.Variables {
-		if err := expandVariable(io, variable, scope, veryVerbose); err != nil {
+		if err := expandVariable(io, variable, scope, verbosityLevel); err != nil {
 			return "", err
 		}
 	}
 
-	if veryVerbose {
+	if verbosityLevel >= VerbosityDebug {
 		io.Std().Printf("[DEBUG] Variable expansion complete. Scope:\n")
 		for k, v := range scope {
 			io.Std().Printf("[DEBUG]   %%%s%% = %s\n", k, v)
@@ -34,9 +34,9 @@ func ExpandCommand(io io.IO, template *CommandTemplate, veryVerbose bool) (strin
 	}
 
 	// Substitute variables in the template
-	result := substituteVariables(io, template.Template, scope, veryVerbose)
+	result := substituteVariables(io, template.Template, scope, verbosityLevel)
 
-	if veryVerbose {
+	if verbosityLevel >= VerbosityDebug {
 		io.Std().Printf("[DEBUG] After variable substitution: %s\n", result)
 	}
 
@@ -44,29 +44,29 @@ func ExpandCommand(io io.IO, template *CommandTemplate, veryVerbose bool) (strin
 }
 
 // expandVariable recursively expands a variable and adds it to scope
-func expandVariable(io io.IO, variable WhereVariable, scope map[string]string, veryVerbose bool) error {
-	if veryVerbose {
+func expandVariable(io io.IO, variable WhereVariable, scope map[string]string, verbosityLevel int) error {
+	if verbosityLevel >= VerbosityDebug {
 		io.Std().Printf("[DEBUG] Expanding variable: %s (initial value: %s, type: %s)\n", variable.Name, variable.Value, variable.Type)
 	}
 
 	// First, expand all children (bottom-up)
 	childScope := make(map[string]string)
 	for _, child := range variable.Children {
-		if err := expandVariable(io, child, childScope, veryVerbose); err != nil {
+		if err := expandVariable(io, child, childScope, verbosityLevel); err != nil {
 			return err
 		}
 	}
 
 	// Substitute child variables in this variable's value
-	value := substituteVariables(io, variable.Value, childScope, veryVerbose)
+	value := substituteVariables(io, variable.Value, childScope, verbosityLevel)
 
-	if veryVerbose && len(childScope) > 0 {
+	if verbosityLevel >= VerbosityDebug && len(childScope) > 0 {
 		io.Std().Printf("[DEBUG] Variable '%s' after child substitution: %s\n", variable.Name, value)
 	}
 
 	// If type is cmd, execute it
 	if variable.Type == WhereTypeCmd {
-		if veryVerbose {
+		if verbosityLevel >= VerbosityDebug {
 			io.Std().Printf("[DEBUG] Executing command for variable '%s': %s\n", variable.Name, value)
 		}
 		output, err := executeCommand(io, value)
@@ -74,7 +74,7 @@ func expandVariable(io io.IO, variable WhereVariable, scope map[string]string, v
 			return fmt.Errorf("failed to execute command for variable '%s': %w", variable.Name, err)
 		}
 		value = strings.TrimSpace(output)
-		if veryVerbose {
+		if verbosityLevel >= VerbosityDebug {
 			io.Std().Printf("[DEBUG] Command output for '%s': %s\n", variable.Name, value)
 		}
 	}
@@ -88,7 +88,7 @@ func expandVariable(io io.IO, variable WhereVariable, scope map[string]string, v
 	// Add to scope
 	scope[variable.Name] = value
 
-	if veryVerbose {
+	if verbosityLevel >= VerbosityDebug {
 		io.Std().Printf("[DEBUG] Variable '%s' final value: %s\n", variable.Name, value)
 	}
 
@@ -106,7 +106,7 @@ func executeCommand(io io.IO, command string) (string, error) {
 }
 
 // substituteVariables replaces %%variable%% placeholders in text
-func substituteVariables(io io.IO, text string, scope map[string]string, veryVerbose bool) string {
+func substituteVariables(io io.IO, text string, scope map[string]string, verbosityLevel int) string {
 	// Regex to find %%variable%% patterns
 	re := regexp.MustCompile(`%%([a-zA-Z0-9_-]+)%%`)
 
@@ -116,7 +116,7 @@ func substituteVariables(io io.IO, text string, scope map[string]string, veryVer
 
 		// Look up in scope
 		if value, ok := scope[varName]; ok {
-			if veryVerbose {
+			if verbosityLevel >= VerbosityDebug {
 				io.Std().Printf("[DEBUG] Substituting %%%s%% with: %s\n", varName, value)
 			}
 			return value
