@@ -12,6 +12,7 @@ import (
 	"github.com/dector/ror/internal/io"
 	"github.com/dector/ror/internal/task"
 	"github.com/dector/ror/internal/utils"
+	"github.com/fatih/color"
 )
 
 var configFile = "ror.kdl"
@@ -107,7 +108,8 @@ func buildProject(io io.IO, env internal.Env) task.Project {
 			compat.RunTaskfile(io, utils.SubSlice(io.Std().Args(), 1))
 			io.Std().Exit(0)
 		}
-		io.Std().Println("ror.kdl not found")
+		red := color.New(color.FgRed, color.Bold).SprintFunc()
+		io.Std().Printf("%s ror.kdl not found\n", red("Error:"))
 		io.Std().Exit(1)
 	}
 
@@ -119,7 +121,8 @@ func execute(io io.IO, ctx internal.Context) {
 
 	if slices.Contains(ctx.Args.RorArgs, "--export-taskfile") {
 		if config.CheckTaskfileExists(io) {
-			fmt.Fprintln(io.Std().Stderr(), "Error: Taskfile.yml already exists")
+			red := color.New(color.FgRed, color.Bold).SprintFunc()
+			fmt.Fprintf(io.Std().Stderr(), "%s Taskfile.yml already exists\n", red("Error:"))
 			io.Std().Exit(1)
 		}
 		compat.ExportTaskfile(io, ctx.Project)
@@ -144,22 +147,42 @@ func execute(io io.IO, ctx internal.Context) {
 		printUsage(io)
 	default:
 		if err := runTaskWithDependencies(io, ctx); err != nil {
-			fmt.Fprintf(io.Std().Stderr(), "Error: %v\n", err)
+			red := color.New(color.FgRed, color.Bold).SprintFunc()
+			fmt.Fprintf(io.Std().Stderr(), "%s %v\n", red("Error:"), err)
 			io.Std().Exit(1)
 		}
 	}
 }
 
 func printUsage(io io.IO) {
-	io.Std().Println("Usage:")
-	io.Std().Println("  ror [flags] [task] [task args]")
+	bold := color.New(color.Bold).SprintFunc()
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+
+	io.Std().Println(cyan("Usage:"))
+	io.Std().Printf("  %s %s %s %s\n",
+		bold("ror"),
+		green("[flags]"),
+		green("[task]"),
+		green("[task args]"))
 	io.Std().Println("")
-	io.Std().Println("Flags:")
-	io.Std().Println("  --export-taskfile   Export ror.kdl to Taskfile.yml")
-	io.Std().Println("  -v                  Verbose output")
-	io.Std().Println("  -vvv                Very verbose output")
+
+	io.Std().Println(cyan("Flags:"))
+	io.Std().Printf("  %s   Export ror.kdl to Taskfile.yml\n", yellow("--export-taskfile"))
+	io.Std().Printf("  %s                  Verbose output\n", yellow("-v"))
+	io.Std().Printf("  %s                Very verbose output\n", yellow("-vvv"))
 	io.Std().Println("")
-	io.Std().Println("Commands:")
-	io.Std().Println("  version             Print version")
-	io.Std().Println("  help                Print this help message")
+
+	io.Std().Println(cyan("Commands:"))
+	io.Std().Printf("  %s             Print version\n", yellow("version"))
+	io.Std().Printf("    %s          Short version format\n", green("--short"))
+	io.Std().Printf("    %s        Verbose version format\n", green("--verbose"))
+	io.Std().Printf("  %s                Print this help message\n", yellow("help"))
+	io.Std().Println("")
+
+	io.Std().Println(cyan("Examples:"))
+	io.Std().Printf("  %s              List all available tasks\n", bold("ror"))
+	io.Std().Printf("  %s         Run the 'build' task\n", bold("ror build"))
+	io.Std().Printf("  %s   Run with verbose output\n", bold("ror -v test"))
 }
