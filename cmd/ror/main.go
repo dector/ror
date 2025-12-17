@@ -154,11 +154,40 @@ func execute(io io.IO, ctx internal.Context) {
 		return
 	}
 
-	if ctx.Args.TaskName == "" || slices.Contains(ctx.Args.RorArgs, "+list") {
+	// Handle +list flag explicitly
+	if slices.Contains(ctx.Args.RorArgs, "+list") {
 		commands.CmdListTasks(io, ctx)
 		return
 	}
 
+	// If no task is specified, use default task if available
+	if ctx.Args.TaskName == "" {
+		if ctx.Env.VerbosityLevel >= task.VerbosityDebug {
+			fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Default task: '%s'\n", ctx.Project.DefaultTask)
+		}
+		if ctx.Project.DefaultTask != "" {
+			// Use the default task
+			ctx.Args.TaskName = ctx.Project.DefaultTask
+			// If no task args were provided and default args are defined, use them
+			if len(ctx.Args.TaskArgs) == 0 && len(ctx.Project.DefaultArgs) > 0 {
+				ctx.Args.TaskArgs = ctx.Project.DefaultArgs
+				if ctx.Env.VerbosityLevel >= task.VerbosityDebug {
+					fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Using default args: %v\n", ctx.Args.TaskArgs)
+				}
+			}
+			if ctx.Env.VerbosityLevel >= task.VerbosityDebug {
+				fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Using default task: '%s'\n", ctx.Args.TaskName)
+			}
+		} else {
+			// No default task, list tasks
+			commands.CmdListTasks(io, ctx)
+			return
+		}
+	}
+
+	if ctx.Env.VerbosityLevel >= task.VerbosityDebug {
+		fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Choosen task: '%s'\n", ctx.Args.TaskName)
+	}
 	switch ctx.Args.TaskName {
 	case "version":
 		// Version command respects verbosity (silent and quiet suppress output)

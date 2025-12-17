@@ -1,3 +1,5 @@
+default task="run" args="+list"
+
 task run {
   description "Runs the application"
 

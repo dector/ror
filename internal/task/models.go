@@ -46,5 +46,7 @@ type Task struct {
 }
 
 type Project struct {
-	Tasks *orderedmap.OrderedMap[string, Task]
+	Tasks       *orderedmap.OrderedMap[string, Task]
+	DefaultTask string   // Task to run when no task is specified
+	DefaultArgs []string // Arguments to pass to the default task
 }
