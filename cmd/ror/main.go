@@ -154,7 +154,7 @@ func execute(io io.IO, ctx internal.Context) {
 		return
 	}
 
-	if ctx.Args.TaskName == "" {
+	if ctx.Args.TaskName == "" || slices.Contains(ctx.Args.RorArgs, "+list") {
 		commands.CmdListTasks(io, ctx)
 		return
 	}
@@ -192,6 +192,7 @@ func printUsage(io io.IO, env internal.Env) {
 	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
+	dim := color.New(color.Faint).SprintFunc()
 
 	io.Std().Println(cyan("Usage:"))
 	io.Std().Printf("  %s %s %s %s\n",
@@ -202,23 +203,24 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Flags:"))
-	io.Std().Printf("  %s   Export ror.kdl to Taskfile.yml\n", yellow("--export-taskfile"))
-	io.Std().Printf("  %s             Silent mode (no output)\n", yellow("--silent"))
-	io.Std().Printf("  %s, %s       Quiet mode (errors only)\n", yellow("-q"), yellow("--quiet"))
-	io.Std().Printf("  %s                  Verbose output (level 1)\n", yellow("-v"))
-	io.Std().Printf("  %s                 Very verbose output (level 2)\n", yellow("-vv"))
-	io.Std().Printf("  %s               Debug output (level 3)\n", yellow("-vvv"))
+	io.Std().Printf("  %-25s%s\n", yellow("+list"), "List all available tasks")
+	io.Std().Printf("  %-25s%s\n", yellow("--export-taskfile"), "Export ror.kdl to Taskfile.yml")
+	io.Std().Printf("  %-25s%s\n", yellow("--silent"), "Silent mode (no output)")
+	io.Std().Printf("  %-25s%s\n", yellow("-q, --quiet"), "Quiet mode (errors only)")
+	io.Std().Printf("  %-25s%s\n", yellow("-v"), "Verbose output (level 1)")
+	io.Std().Printf("  %-25s%s\n", yellow("-vv"), "Very verbose output (level 2)")
+	io.Std().Printf("  %-25s%s\n", yellow("-vvv"), "Debug output (level 3)")
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Commands:"))
-	io.Std().Printf("  %s             Print version\n", yellow("version"))
-	io.Std().Printf("    %s          Short version format\n", green("--short"))
-	io.Std().Printf("    %s        Verbose version format\n", green("--verbose"))
-	io.Std().Printf("  %s                Print this help message\n", yellow("help"))
+	io.Std().Printf("  %-25s%s\n", yellow("version"), "Print version")
+	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
+	io.Std().Printf("    %-23s%s\n", green("--verbose"), "Verbose version format")
+	io.Std().Printf("  %-25s%s\n", yellow("help"), "Print this help message")
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Examples:"))
-	io.Std().Printf("  %s              List all available tasks\n", bold("ror"))
-	io.Std().Printf("  %s         Run the 'build' task\n", bold("ror build"))
-	io.Std().Printf("  %s   Run with verbose output\n", bold("ror -v test"))
+	io.Std().Printf("  %-25s%s\n", dim("ror"), dim("List all available tasks"))
+	io.Std().Printf("  %-25s%s\n", dim("ror build"), dim("Run the 'build' task"))
+	io.Std().Printf("  %-25s%s\n", dim("ror -v test"), dim("Run with verbose output"))
 }
