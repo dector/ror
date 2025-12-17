@@ -25,7 +25,7 @@ task install {
     on "build"
   }
 
-  cmd "cp ./out/ror ~/.local/bin/ror"
+  cmd "install -m 755 ./out/ror ~/.local/bin/ror"
 }
 
 task go {
