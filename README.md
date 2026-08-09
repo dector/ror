@@ -20,6 +20,7 @@ ror [flags] [task] [task args]
 ## Flags
 
 -   `--export-taskfile`: Export `ror.kdl` to `Taskfile.yml` (for compatibility with [Task](https://taskfile.dev/)).
+-   `-s`, `--silent`: Silent mode (no output).
 -   `-v`: Verbose output.
 -   `-vvv`: Very verbose output.
 

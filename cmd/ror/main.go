@@ -82,7 +82,7 @@ func buildEnvAndArgs(io io.IO) (internal.Env, internal.ParsedArgs) {
 			vLevel += 3
 		case "-q", "--quiet":
 			vLevel -= 1
-		case "--silent":
+		case "-s", "--silent":
 			vLevel -= 2
 		}
 	}
@@ -234,7 +234,7 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Println(cyan("Flags:"))
 	io.Std().Printf("  %-25s%s\n", yellow("+list"), "List all available tasks")
 	io.Std().Printf("  %-25s%s\n", yellow("--export-taskfile"), "Export ror.kdl to Taskfile.yml")
-	io.Std().Printf("  %-25s%s\n", yellow("--silent"), "Silent mode (no output)")
+	io.Std().Printf("  %-25s%s\n", yellow("-s, --silent"), "Silent mode (no output)")
 	io.Std().Printf("  %-25s%s\n", yellow("-q, --quiet"), "Quiet mode (errors only)")
 	io.Std().Printf("  %-25s%s\n", yellow("-v"), "Verbose output (level 1)")
 	io.Std().Printf("  %-25s%s\n", yellow("-vv"), "Very verbose output (level 2)")

@@ -45,7 +45,7 @@ func CmdListTasks(io io.IO, ctx internal.Context) {
 	io.Std().Println("")
 	io.Std().Println(cyan("Useful flags:"))
 	io.Std().Printf("  %-25sList all available tasks\n", yellow("+list"))
-	io.Std().Printf("  %-25sSilent mode (no output)\n", yellow("--silent"))
+	io.Std().Printf("  %-25sSilent mode (no output)\n", yellow("-s, --silent"))
 	io.Std().Printf("  %-25sQuiet mode (errors only)\n", yellow("-q, --quiet"))
 	io.Std().Printf("  %-25sVerbose output (level 1)\n", yellow("-v"))
 	io.Std().Printf("  %-25sVery verbose output (level 2)\n", yellow("-vv"))
