@@ -103,6 +103,24 @@ func ParseProject(io io.IO, filename string) task.Project {
 	return config
 }
 
+// ValidateProject parses filename and reports whether it is a valid ror
+// configuration. It does not run any commands or dependencies. Parse errors and
+// semantic errors (which ParseProject reports via panic) are returned as error.
+func ValidateProject(io io.IO, filename string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = e
+				return
+			}
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	_ = ParseProject(io, filename)
+	return nil
+}
+
 func readProject(io io.IO, filename string) (*kdly.Document, error) {
 	content, err := io.Files().ReadFile(filename)
 	if err != nil {

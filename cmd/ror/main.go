@@ -19,8 +19,9 @@ var configFile = "ror.kdl"
 
 // commandAliases maps '+flag' style aliases to reserved commands.
 var commandAliases = map[string]string{
-	"+init":    "init",
-	"+version": "version",
+	"+init":     "init",
+	"+version":  "version",
+	"+validate": "validate",
 }
 
 func main() {
@@ -34,6 +35,12 @@ func execMain(io io.IO) {
 	// 'init' creates ror.kdl, so it must run before the project is loaded.
 	if args.TaskName == "init" {
 		commands.CmdInit(io, env, configFile)
+		return
+	}
+
+	// 'validate' checks an arbitrary file, so it must run before the project is loaded.
+	if args.TaskName == "validate" {
+		commands.CmdValidate(io, env, args.TaskArgs)
 		return
 	}
 
@@ -262,6 +269,8 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Println(cyan("Commands:"))
 	io.Std().Printf("  %-25s%s\n", yellow("init"), "Create a new ror.kdl template")
 	io.Std().Printf("    %-23s%s\n", green("+init"), "Alias for init")
+	io.Std().Printf("  %-25s%s\n", yellow("validate"), "Validate a ror.kdl file")
+	io.Std().Printf("    %-23s%s\n", green("+validate"), "Alias for validate")
 	io.Std().Printf("  %-25s%s\n", yellow("version"), "Print version")
 	io.Std().Printf("    %-23s%s\n", green("+version"), "Alias for version")
 	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
@@ -273,4 +282,5 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Printf("  %-25s%s\n", dim("ror"), dim("List all available tasks"))
 	io.Std().Printf("  %-25s%s\n", dim("ror build"), dim("Run the 'build' task"))
 	io.Std().Printf("  %-25s%s\n", dim("ror -v test"), dim("Run with verbose output"))
+	io.Std().Printf("  %-25s%s\n", dim("ror +validate ror.kdl"), dim("Check a config file"))
 }

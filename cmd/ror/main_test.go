@@ -24,6 +24,11 @@ func TestParseArgumentsCommandAliases(t *testing.T) {
 			want: internal.ParsedArgs{TaskName: "version", TaskArgs: []string{}},
 		},
 		{
+			name: "+validate becomes the validate command with a file argument",
+			args: []string{"+validate", "ror.kdl"},
+			want: internal.ParsedArgs{TaskName: "validate", TaskArgs: []string{"ror.kdl"}},
+		},
+		{
 			name: "flags before the alias stay as ror flags",
 			args: []string{"-v", "+version"},
 			want: internal.ParsedArgs{RorArgs: []string{"-v"}, TaskName: "version", TaskArgs: []string{}},
