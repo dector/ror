@@ -23,25 +23,37 @@ jobs:
 
       - name: Build linux amd64 binary
         run: |
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-            go build \
-            -trimpath \
-            -ldflags "-s -w -X 'github.com/dector/ror/internal/env.version=latest' -X 'github.com/dector/ror/internal/env.commit=${GITHUB_SHA}' -X 'github.com/dector/ror/internal/env.time=$(date -u +%Y-%m-%dT%H:%M:%SZ)'" \
-            -o ./ror \
-            ./cmd/ror
+          SHORT_SHA="${GITHUB_SHA::7}"
+          ASSET="ror-linux-amd64-${SHORT_SHA}.tar.gz"
+          COMMIT_TIME="$(git log -1 --format=%cI)"
 
-          tar -czf ror-linux-amd64.tar.gz ror
+          echo "ASSET=${ASSET}" >> "$GITHUB_ENV"
+
+          LDFLAGS="-s -w \
+            -X 'github.com/dector/ror/internal/env.version=latest' \
+            -X 'github.com/dector/ror/internal/env.commit=${GITHUB_SHA}' \
+            -X 'github.com/dector/ror/internal/env.time=${COMMIT_TIME}'"
+
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+            go build -trimpath -ldflags "$LDFLAGS" -o ./ror ./cmd/ror
+
+          # Reproducible archive: fixed mtime, owner/group and entry order.
+          # The same commit then always yields the same bytes (and checksum).
+          tar --sort=name \
+              --mtime='@0' \
+              --owner=0 --group=0 --numeric-owner \
+              -cf - ror | gzip -n > "${ASSET}"
 
       - name: Replace latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Drop the previous release together with its tag and old artifacts.
           if gh release view latest >/dev/null 2>&1; then
             gh release delete latest --cleanup-tag --yes
           fi
 
-          gh release create latest \
-            ror-linux-amd64.tar.gz \
+          gh release create latest "${ASSET}" \
             --title "latest" \
             --notes "Automated build from ${GITHUB_SHA}" \
             --latest
