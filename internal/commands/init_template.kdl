@@ -1,0 +1,12 @@
+// ror.kdl - configuration for the Ror task runner.
+// Run 'ror +list' to list tasks, or 'ror help' for usage.
+
+// default task="hello"
+
+task hello {
+    // env DEV="1"
+
+    description "Prints a greeting"
+
+    cmd "echo Hello from ror!"
+}

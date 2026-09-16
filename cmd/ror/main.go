@@ -25,6 +25,12 @@ func main() {
 func execMain(io io.IO) {
 	env, args := buildEnvAndArgs(io)
 
+	// 'init' creates ror.kdl, so it must run before the project is loaded.
+	if args.TaskName == "init" {
+		commands.CmdInit(io, env, configFile)
+		return
+	}
+
 	ctx := createContext(io, env, args)
 
 	execute(io, ctx)
@@ -242,6 +248,7 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Commands:"))
+	io.Std().Printf("  %-25s%s\n", yellow("init"), "Create a new ror.kdl template")
 	io.Std().Printf("  %-25s%s\n", yellow("version"), "Print version")
 	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
 	io.Std().Printf("    %-23s%s\n", green("--verbose"), "Verbose version format")

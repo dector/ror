@@ -40,6 +40,7 @@ func CmdListTasks(io io.IO, ctx internal.Context) {
 
 	io.Std().Println("")
 	io.Std().Println(cyan("Reserved commands:"))
+	io.Std().Printf("  %-25sCreate a new ror.kdl template\n", yellow("init"))
 	io.Std().Printf("  %-25sPrint version information\n", yellow("version"))
 	io.Std().Printf("  %-25sPrint help message\n", yellow("help"))
 	io.Std().Println("")
