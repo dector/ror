@@ -44,6 +44,18 @@ func execMain(io io.IO) {
 		return
 	}
 
+	// 'version' only reports build info, so it must not require ror.kdl.
+	if args.TaskName == "version" {
+		printVersion(io, env, args.TaskArgs)
+		return
+	}
+
+	// 'help' only prints usage, so it must not require ror.kdl.
+	if args.TaskName == "help" {
+		printUsage(io, env)
+		return
+	}
+
 	ctx := createContext(io, env, args)
 
 	execute(io, ctx)
@@ -213,26 +225,25 @@ func execute(io io.IO, ctx internal.Context) {
 	if ctx.Env.VerbosityLevel >= task.VerbosityDebug {
 		fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Choosen task: '%s'\n", ctx.Args.TaskName)
 	}
-	switch ctx.Args.TaskName {
-	case "version":
-		// Version command respects verbosity (silent and quiet suppress output)
-		if ctx.Env.VerbosityLevel >= task.VerbosityNormal {
-			if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--short" {
-				io.Std().Printf("%s\n", env.GetShortVersion())
-			} else if len(ctx.Args.TaskArgs) > 0 && ctx.Args.TaskArgs[0] == "--verbose" {
-				io.Std().Printf("%s\n", env.GetLongVersion())
-			} else {
-				io.Std().Printf("%s\n", env.GetDefaultVersion())
-			}
-		}
-	case "help":
-		printUsage(io, ctx.Env)
-	default:
-		if err := runTaskWithDependencies(io, ctx); err != nil {
-			red := color.New(color.FgRed, color.Bold).SprintFunc()
-			fmt.Fprintf(io.Std().Stderr(), "%s %v\n", red("Error:"), err)
-			io.Std().Exit(1)
-		}
+	if err := runTaskWithDependencies(io, ctx); err != nil {
+		red := color.New(color.FgRed, color.Bold).SprintFunc()
+		fmt.Fprintf(io.Std().Stderr(), "%s %v\n", red("Error:"), err)
+		io.Std().Exit(1)
+	}
+}
+
+// printVersion reports build information. It respects verbosity: silent and
+// quiet modes suppress output.
+func printVersion(io io.IO, runtimeEnv internal.Env, taskArgs []string) {
+	if runtimeEnv.VerbosityLevel < task.VerbosityNormal {
+		return
+	}
+	if len(taskArgs) > 0 && taskArgs[0] == "--short" {
+		io.Std().Printf("%s\n", env.GetShortVersion())
+	} else if len(taskArgs) > 0 && taskArgs[0] == "--verbose" {
+		io.Std().Printf("%s\n", env.GetLongVersion())
+	} else {
+		io.Std().Printf("%s\n", env.GetDefaultVersion())
 	}
 }
 
