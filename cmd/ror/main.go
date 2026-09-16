@@ -17,6 +17,12 @@ import (
 
 var configFile = "ror.kdl"
 
+// commandAliases maps '+flag' style aliases to reserved commands.
+var commandAliases = map[string]string{
+	"+init":    "init",
+	"+version": "version",
+}
+
 func main() {
 	io := io.NewIO()
 	execMain(io)
@@ -45,6 +51,12 @@ func parseArguments(args []string) internal.ParsedArgs {
 	// Collect all arguments starting with '-', '+', or '--' before any task name
 	for i < len(args) {
 		arg := args[i]
+		if name, ok := commandAliases[arg]; ok {
+			// Alias for a reserved command, e.g. '+version --short'.
+			taskName = name
+			i++
+			break
+		}
 		if len(arg) > 0 && (arg[0] == '-' || arg[0] == '+') {
 			rorArgs = append(rorArgs, arg)
 			i++
@@ -249,7 +261,9 @@ func printUsage(io io.IO, env internal.Env) {
 
 	io.Std().Println(cyan("Commands:"))
 	io.Std().Printf("  %-25s%s\n", yellow("init"), "Create a new ror.kdl template")
+	io.Std().Printf("    %-23s%s\n", green("+init"), "Alias for init")
 	io.Std().Printf("  %-25s%s\n", yellow("version"), "Print version")
+	io.Std().Printf("    %-23s%s\n", green("+version"), "Alias for version")
 	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
 	io.Std().Printf("    %-23s%s\n", green("--verbose"), "Verbose version format")
 	io.Std().Printf("  %-25s%s\n", yellow("help"), "Print this help message")
