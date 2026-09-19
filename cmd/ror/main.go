@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -22,6 +23,7 @@ var commandAliases = map[string]string{
 	"+init":     "init",
 	"+version":  "version",
 	"+validate": "validate",
+	"+help":     "help",
 }
 
 func main() {
@@ -226,6 +228,11 @@ func execute(io io.IO, ctx internal.Context) {
 		fmt.Fprintf(io.Std().Stderr(), "[DEBUG] Choosen task: '%s'\n", ctx.Args.TaskName)
 	}
 	if err := runTaskWithDependencies(io, ctx); err != nil {
+		var notFound *task.TaskNotFoundError
+		if errors.As(err, &notFound) {
+			printUnknownTask(io, ctx, notFound.Name)
+			io.Std().Exit(1)
+		}
 		red := color.New(color.FgRed, color.Bold).SprintFunc()
 		fmt.Fprintf(io.Std().Stderr(), "%s %v\n", red("Error:"), err)
 		io.Std().Exit(1)
@@ -245,6 +252,30 @@ func printVersion(io io.IO, runtimeEnv internal.Env, taskArgs []string) {
 	} else {
 		io.Std().Printf("%s\n", env.GetDefaultVersion())
 	}
+}
+
+// printUnknownTask reports an unknown task, lists the tasks defined in the
+// project and points the user to the help command.
+func printUnknownTask(io io.IO, ctx internal.Context, name string) {
+	red := color.New(color.FgRed, color.Bold).SprintFunc()
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+
+	stderr := io.Std().Stderr()
+	fmt.Fprintf(stderr, "%s task '%s' not found\n", red("Error:"), name)
+
+	if ctx.Env.VerbosityLevel >= task.VerbosityNormal && ctx.Project.Tasks.Len() > 0 {
+		fmt.Fprintln(stderr, cyan("Known tasks:"))
+		for pair := ctx.Project.Tasks.Oldest(); pair != nil; pair = pair.Next() {
+			if pair.Value.Description == "" {
+				fmt.Fprintf(stderr, "  %s\n", yellow(pair.Key))
+				continue
+			}
+			fmt.Fprintf(stderr, "  %-25s%s\n", yellow(pair.Key), pair.Value.Description)
+		}
+	}
+
+	fmt.Fprintf(stderr, "For ror usage - use `ror +help`.\n")
 }
 
 func printUsage(io io.IO, env internal.Env) {
@@ -287,6 +318,7 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
 	io.Std().Printf("    %-23s%s\n", green("--verbose"), "Verbose version format")
 	io.Std().Printf("  %-25s%s\n", yellow("help"), "Print this help message")
+	io.Std().Printf("    %-23s%s\n", green("+help"), "Alias for help")
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Examples:"))

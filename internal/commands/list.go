@@ -47,6 +47,7 @@ func CmdListTasks(io io.IO, ctx internal.Context) {
 	io.Std().Printf("  %-25sPrint version information\n", yellow("version"))
 	io.Std().Printf("    %-23sAlias for version\n", green("+version"))
 	io.Std().Printf("  %-25sPrint help message\n", yellow("help"))
+	io.Std().Printf("    %-23sAlias for help\n", green("+help"))
 	io.Std().Println("")
 	io.Std().Println(cyan("Useful flags:"))
 	io.Std().Printf("  %-25sList all available tasks\n", yellow("+list"))

@@ -19,6 +19,11 @@ func TestParseArgumentsCommandAliases(t *testing.T) {
 			want: internal.ParsedArgs{TaskName: "init", TaskArgs: []string{}},
 		},
 		{
+			name: "+help becomes the help command",
+			args: []string{"+help"},
+			want: internal.ParsedArgs{TaskName: "help", TaskArgs: []string{}},
+		},
+		{
 			name: "+version becomes the version command",
 			args: []string{"+version"},
 			want: internal.ParsedArgs{TaskName: "version", TaskArgs: []string{}},
