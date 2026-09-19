@@ -26,10 +26,12 @@ ror [flags] [task] [task args]
 
 ## Commands
 
--   `init` (`+init`): Create a new `ror.kdl` template.
--   `validate <file>` (`+validate <file>`): Check that a file is valid `ror.kdl`.
--   `version` (`+version`): Print version.
--   `help`: Print help message.
+Built-in commands are invoked with a leading `+`, so plain names stay free for tasks.
+
+-   `+init`: Create a new `ror.kdl` template.
+-   `+validate <file>`: Check that a file is valid `ror.kdl`.
+-   `+version`: Print version.
+-   `+help`: Print help message.
 
 # Format Description
 

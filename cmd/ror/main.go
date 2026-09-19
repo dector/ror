@@ -18,7 +18,7 @@ import (
 
 var configFile = "ror.kdl"
 
-// commandAliases maps '+flag' style aliases to reserved commands.
+// commandAliases maps '+command' aliases to reserved commands.
 var commandAliases = map[string]string{
 	"+init":     "init",
 	"+version":  "version",
@@ -35,25 +35,25 @@ func execMain(io io.IO) {
 	env, args := buildEnvAndArgs(io)
 
 	// 'init' creates ror.kdl, so it must run before the project is loaded.
-	if args.TaskName == "init" {
+	if args.Command == "init" {
 		commands.CmdInit(io, env, configFile)
 		return
 	}
 
 	// 'validate' checks an arbitrary file, so it must run before the project is loaded.
-	if args.TaskName == "validate" {
+	if args.Command == "validate" {
 		commands.CmdValidate(io, env, args.TaskArgs)
 		return
 	}
 
 	// 'version' only reports build info, so it must not require ror.kdl.
-	if args.TaskName == "version" {
+	if args.Command == "version" {
 		printVersion(io, env, args.TaskArgs)
 		return
 	}
 
 	// 'help' only prints usage, so it must not require ror.kdl.
-	if args.TaskName == "help" {
+	if args.Command == "help" {
 		printUsage(io, env)
 		return
 	}
@@ -65,16 +65,17 @@ func execMain(io io.IO) {
 
 func parseArguments(args []string) internal.ParsedArgs {
 	var rorArgs []string
+	var command string
 	var taskName string
 	var taskArgs []string
 
 	i := 0
-	// Collect all arguments starting with '-', '+', or '--' before any task name
+	// Collect all arguments starting with '-' or '+' before any task name
 	for i < len(args) {
 		arg := args[i]
 		if name, ok := commandAliases[arg]; ok {
-			// Alias for a reserved command, e.g. '+version --short'.
-			taskName = name
+			// Command alias, e.g. '+version --short'.
+			command = name
 			i++
 			break
 		}
@@ -94,6 +95,7 @@ func parseArguments(args []string) internal.ParsedArgs {
 
 	parsed := internal.ParsedArgs{
 		RorArgs:  rorArgs,
+		Command:  command,
 		TaskName: taskName,
 		TaskArgs: taskArgs,
 	}
@@ -142,6 +144,7 @@ func buildEnvAndArgs(io io.IO) (internal.Env, internal.ParsedArgs) {
 	if env.VerbosityLevel >= task.VerbosityDebug {
 		io.Std().Printf("[DEBUG] Raw arguments: %v\n", osArgs)
 		io.Std().Printf("[DEBUG] Parsed ror args: %v\n", args.RorArgs)
+		io.Std().Printf("[DEBUG] Parsed command: %s\n", args.Command)
 		io.Std().Printf("[DEBUG] Parsed task name: %s\n", args.TaskName)
 		io.Std().Printf("[DEBUG] Parsed task args: %v\n", args.TaskArgs)
 		io.Std().Printf("[DEBUG] Verbosity level: %d\n", env.VerbosityLevel)
@@ -309,16 +312,12 @@ func printUsage(io io.IO, env internal.Env) {
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Commands:"))
-	io.Std().Printf("  %-25s%s\n", yellow("init"), "Create a new ror.kdl template")
-	io.Std().Printf("    %-23s%s\n", green("+init"), "Alias for init")
-	io.Std().Printf("  %-25s%s\n", yellow("validate"), "Validate a ror.kdl file")
-	io.Std().Printf("    %-23s%s\n", green("+validate"), "Alias for validate")
-	io.Std().Printf("  %-25s%s\n", yellow("version"), "Print version")
-	io.Std().Printf("    %-23s%s\n", green("+version"), "Alias for version")
+	io.Std().Printf("  %-25s%s\n", yellow("+init"), "Create a new ror.kdl template")
+	io.Std().Printf("  %-25s%s\n", yellow("+validate"), "Validate a ror.kdl file")
+	io.Std().Printf("  %-25s%s\n", yellow("+version"), "Print version")
 	io.Std().Printf("    %-23s%s\n", green("--short"), "Short version format")
 	io.Std().Printf("    %-23s%s\n", green("--verbose"), "Verbose version format")
-	io.Std().Printf("  %-25s%s\n", yellow("help"), "Print this help message")
-	io.Std().Printf("    %-23s%s\n", green("+help"), "Alias for help")
+	io.Std().Printf("  %-25s%s\n", yellow("+help"), "Print this help message")
 	io.Std().Println("")
 
 	io.Std().Println(cyan("Examples:"))

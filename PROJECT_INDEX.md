@@ -212,7 +212,7 @@ ror build
 ror -v build
 
 # Show version
-ror version
+ror +version
 ```
 
 ### Create Tasks

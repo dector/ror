@@ -4,6 +4,7 @@ import "github.com/dector/ror/internal/task"
 
 type ParsedArgs struct {
 	RorArgs  []string
+	Command  string // reserved command selected via '+alias' (e.g. "init")
 	TaskName string
 	TaskArgs []string
 }
